@@ -294,4 +294,14 @@
     }
 }
 
+- (void)testFormatEther {
+    // 1000000000000000000000000
+    BigNumber *bigNumber = [BigNumber bigNumberWithHexString:"0x00000000000000000000000000000000000000000000D3C21BCECCEDA0000000"];
+    
+    // Deciamals = 8
+    String *result = [Payment formatEther:bigNumber decimals:8]
+    
+    XCTAssertEqualObjects("1000000000000000000000000", result, @"Failed to format Ether with bignumber: %f", bigNumber.result);
+}
+
 @end

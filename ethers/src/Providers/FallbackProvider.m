@@ -256,9 +256,25 @@
     return [self executeOperation:startCallback promiseClass:[TransactionInfoPromise class]];
 }
 
-- (ArrayPromise*)getTransactions: (Address*)address startBlockTag: (BlockTag)blockTag {
+- (TransactionInfoPromise*)getTransactionReceiptByHash:(Hash *)transactionHash {
     Promise* (^startCallback)(Provider*) = ^Promise*(Provider *provider) {
-        return [provider getTransactions:address startBlockTag:blockTag];
+        return [provider getTransactionReceiptByHash:transactionHash];
+    };
+    return [self executeOperation:startCallback promiseClass:[TransactionInfoPromise class]];
+}
+
+- (ArrayPromise*)getTransactions:(Address*)address startBlockTag:(BlockTag)startBlockTag endBlockTag:(BlockTag)endBlockTag {
+    Promise* (^startCallback)(Provider*) = ^Promise*(Provider *provider) {
+        return [provider getTransactions:address startBlockTag:startBlockTag endBlockTag:endBlockTag];
+    };
+    return [self executeOperation:startCallback promiseClass:[ArrayPromise class]];
+}
+
+//- (ArrayPromise*)getLogs:(Address *)tokenAddress andAddress:(Address *)address {
+- (ArrayPromise *)getLogsWithAddress:(Address *)address fromBlockTag:(BlockTag)fromBlockTag toBlockTag:(BlockTag)toBlockTag topic0:(Hash *)topic0 topic1:(Hash *)topic1 topic2:(Hash *)topic2 topic3:(Hash *)topic3 topic0_1_opr:(NSString *)topic0_1_opr topic1_2_opr:(NSString *)topic1_2_opr topic2_3_opr:(NSString *)topic2_3_opr topic0_2_opr:(NSString *)topic0_2_opr topic0_3_opr:(NSString *)topic0_3_opr topic1_3_opr:(NSString *)topic1_3_opr {
+    
+    Promise* (^startCallback)(Provider*) = ^Promise*(Provider *provider) {
+        return [provider getLogsWithAddress:address fromBlockTag:fromBlockTag toBlockTag:toBlockTag topic0:topic0 topic1:topic1 topic2:topic2 topic3:topic3 topic0_1_opr:topic0_1_opr topic1_2_opr:topic1_2_opr topic2_3_opr:topic2_3_opr topic0_2_opr:topic0_2_opr topic0_3_opr:topic0_3_opr topic1_3_opr:topic1_3_opr];
     };
     return [self executeOperation:startCallback promiseClass:[ArrayPromise class]];
 }
@@ -268,6 +284,13 @@
         return [provider getEtherPrice];
     };
     return [self executeOperation:startCallback promiseClass:[FloatPromise class]];
+}
+
+- (BigNumberPromise *)getTokenEtherPriceWithAddress:(Address *)address{
+    Promise* (^startCallback)(Provider*) = ^Promise*(Provider *provider) {
+        return [provider getTokenEtherPriceWithAddress:address];
+    };
+    return [self executeOperation:startCallback promiseClass:[BigNumberPromise class]];
 }
 
 - (NSString*)description {

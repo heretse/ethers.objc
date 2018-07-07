@@ -68,7 +68,7 @@
 @property (nonatomic, readonly) BigNumber *gasLimit;
 @property (nonatomic, readonly) BigNumber *gasUsed;
 
-/*
+
 @property (nonatomic, readonly) Hash *sha3Uncles;
 @property (nonatomic, readonly) Hash *logsBloom;
 @property (nonatomic, readonly) Hash *transactionsRoot;
@@ -79,6 +79,6 @@
 
 @property (nonatomic, readonly) NSArray<Hash*> *transactionHashes;
 @property (nonatomic, readonly) NSArray<Hash*> *uncles;
-*/
+
 
 @end

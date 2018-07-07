@@ -229,12 +229,24 @@ static NSString *UserAgent = nil;
     return [self sendNotImplemented:@"getTransaction" promiseClass:[TransactionInfoPromise class]];
 }
 
-- (ArrayPromise*)getTransactions: (Address*)address startBlockTag: (BlockTag)blockTag {
+- (TransactionInfoPromise *)getTransactionReceiptByHash:(Hash *)transactionHash {
+    return [self sendNotImplemented:@"getTransactionReceiptByHash" promiseClass:[TransactionInfoPromise class]];
+}
+
+- (ArrayPromise *)getTransactions:(Address *)address startBlockTag:(BlockTag)startBlockTag endBlockTag:(BlockTag)endBlockTag {
     return [self sendNotImplemented:@"getTransactions" promiseClass:[ArrayPromise class]];
+}
+
+- (ArrayPromise *)getLogsWithAddress:(Address *)address fromBlockTag:(BlockTag)fromBlockTag toBlockTag:(BlockTag)toBlockTag topic0:(Hash *)topic0 topic1:(Hash *)topic1 topic2:(Hash *)topic2 topic3:(Hash *)topic3 topic0_1_opr:(NSString *)topic0_1_opr topic1_2_opr:(NSString *)topic1_2_opr topic2_3_opr:(NSString *)topic2_3_opr topic0_2_opr:(NSString *)topic0_2_opr topic0_3_opr:(NSString *)topic0_3_opr topic1_3_opr:(NSString *)topic1_3_opr {
+    return [self sendNotImplemented:@"getLogsWithFromBlockTag" promiseClass:[ArrayPromise class]];
 }
 
 - (FloatPromise*)getEtherPrice {
     return [self sendNotImplemented:@"getEtherPrice" promiseClass:[FloatPromise class]];
+}
+
+- (BigNumberPromise*)getTokenEtherPriceWithAddress:(Address *)address {
+    return [self sendNotImplemented:@"getTokenEtherPrice" promiseClass:[BigNumberPromise class]];
 }
 
 - (Address*)getEnsAddress {

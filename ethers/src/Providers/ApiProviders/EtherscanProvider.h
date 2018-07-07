@@ -40,8 +40,8 @@
 
 @interface EtherscanProvider: ApiProvider
 
-- (instancetype)initWithChainId: (ChainId)chainId apiKey: (NSString*)apiKey;
+- (instancetype)initWithChainId:(ChainId)chainId apiKeys:(NSArray *)apiKeys;
 
-@property (nonatomic, readonly) NSString *apiKey;
+@property (nonatomic, readonly) NSArray *apiKeys;
 
 @end

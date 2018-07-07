@@ -18,6 +18,7 @@ FOUNDATION_EXPORT const unsigned char ethersVersionString[];
 #import <ethers/Address.h>
 #import <ethers/BlockInfo.h>
 #import <ethers/Hash.h>
+#import <ethers/LogInfo.h>
 #import <ethers/Payment.h>
 #import <ethers/Signature.h>
 #import <ethers/Transaction.h>
@@ -38,3 +39,4 @@ FOUNDATION_EXPORT const unsigned char ethersVersionString[];
 #import <ethers/Promise.h>
 #import <ethers/RLPSerialization.h>
 #import <ethers/SecureData.h>
+#import <ethers/RegEx.h>

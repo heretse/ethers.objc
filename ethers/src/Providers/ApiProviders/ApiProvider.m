@@ -343,14 +343,14 @@ NSMutableDictionary *transactionObject(Transaction *transaction) {
 - (void)fetch: (NSURL*)url body: (NSData*)body callback: (void (^)(NSData*, NSError*))callback {
     void (^handleResponse)(NSData*, NSURLResponse*, NSError*) = ^(NSData *data, NSURLResponse *response, NSError *error) {
         if (error) {
-            _errorCount++;
+            self->_errorCount++;
             NSDictionary *userInfo = @{@"error": error, @"url": url};
             callback(nil, [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorServerUnknownError userInfo:userInfo]);
             return;
         }
         
         if (![response isKindOfClass:[NSHTTPURLResponse class]]) {
-            _errorCount++;
+            self->_errorCount++;
             NSDictionary *userInfo = @{@"reason": @"response not NSHTTPURLResponse", @"url": url};
             callback(nil, [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorBadResponse userInfo:userInfo]);
             return;
@@ -358,7 +358,7 @@ NSMutableDictionary *transactionObject(Transaction *transaction) {
         
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse*)response;
         if (httpResponse.statusCode != 200) {
-            _errorCount++;
+            self->_errorCount++;
             NSDictionary *userInfo = @{@"statusCode": @(httpResponse.statusCode), @"url": url};
             callback(nil, [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorBadResponse userInfo:userInfo]);
             return;
@@ -368,10 +368,11 @@ NSMutableDictionary *transactionObject(Transaction *transaction) {
     };
     
     dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^() {
-        _requestCount++;
+        self->_requestCount++;
         
         NSMutableURLRequest *request = [[NSMutableURLRequest alloc] initWithURL:url];
         [request setValue:[Provider userAgent] forHTTPHeaderField:@"User-Agent"];
+        [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
         
         if (body) {
             [request setHTTPMethod:@"POST"];
@@ -380,8 +381,13 @@ NSMutableDictionary *transactionObject(Transaction *transaction) {
         }
         
         NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
-        NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:handleResponse];
+//        NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:handleResponse];
+        NSURLSessionDataTask *task = [session dataTaskWithRequest:request completionHandler:^(NSData * _Nullable data, NSURLResponse * _Nullable response, NSError * _Nullable error) {
+            [session finishTasksAndInvalidate];
+            handleResponse(data, response, error);
+        }];
         [task resume];
+        
     });
     
 }
@@ -390,6 +396,7 @@ NSMutableDictionary *transactionObject(Transaction *transaction) {
     Class promiseClass = getPromiseClass(fetchType);
     
     return [(Promise*)[promiseClass alloc] initWithSetup:^(Promise *promise) {
+        
         [self fetch:url body:body callback:^(NSData *response, NSError *error) {
             if (error) {
                 [promise reject:error];
@@ -417,7 +424,7 @@ NSMutableDictionary *transactionObject(Transaction *transaction) {
                 return;
             }
             
-            //NSLog(@"RESULT: %@", NSStringFromClass([processed class]));
+//            NSLog(@"RESULT: %@", NSStringFromClass([processed class]));
             
             NSObject *result = nil;
             if (![processed isEqual:[NSNull null]]) {

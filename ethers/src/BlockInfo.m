@@ -88,7 +88,13 @@ static NSData *NullData = nil;
             NSLog(@"ERROR: Missing gasUsed");
             return nil;
         }
+        
+        _transactionHashes = queryPath(info, @"dictionary:transactions/array");
+        if (!_transactionHashes) {
+            NSLog(@"ERROR: Missing transactions");
+        }
     }
+    
     return self;
 }
 
@@ -103,6 +109,7 @@ static NSData *NullData = nil;
     [info setObject:_extraData forKey:@"extraData"];
     [info setObject:[_gasLimit decimalString] forKey:@"gasLimit"];
     [info setObject:[_gasUsed decimalString] forKey:@"gasUsed"];
+    [info setObject:_transactionHashes forKey:@"transactions"];
     
     return info;
 }

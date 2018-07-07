@@ -47,6 +47,9 @@ typedef NS_OPTIONS(NSUInteger, EtherFormatOption) {
 
 + (NSString*)formatEther: (BigNumber*)wei;
 + (NSString*)formatEther: (BigNumber*)wei options: (NSUInteger)options;
++ (NSString*)formatEther: (BigNumber*)wei decimals: (NSUInteger)decimals;
++ (NSString*)formatEther: (BigNumber*)wei decimals: (NSUInteger)decimals options: (NSUInteger)options;
+
 
 + (BigNumber*)parseEther: (NSString*)etherString;
 

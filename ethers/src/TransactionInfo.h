@@ -54,7 +54,7 @@
 - (NSDictionary*)dictionaryRepresentation;
 
 + (instancetype)transactionInfoWithPendingTransaction: (Transaction*)transaction hash: (Hash*)transactionHash;
-
++ (instancetype)tokenTransactionInfoWithPendingTransaction:(Transaction *)transaction hash:(Hash *)transactionHash;
 
 /**
  *  JSON Representation
@@ -79,10 +79,13 @@
 @property (nonatomic, readonly) BigNumber *gasLimit;
 @property (nonatomic, readonly) BigNumber *gasPrice;
 @property (nonatomic, readonly) BigNumber *gasUsed;
+@property (nonatomic, readonly) BigNumber *fee;
 @property (nonatomic, readonly) BigNumber *cumulativeGasUsed;
 
 @property (nonatomic, readonly) BigNumber *value;
 
 @property (nonatomic, readonly) NSData *data;
-
+    
+@property (nonatomic, readonly) BigNumber *status;
+    
 @end

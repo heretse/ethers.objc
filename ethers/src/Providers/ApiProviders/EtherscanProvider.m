@@ -26,6 +26,8 @@
 #import "EtherscanProvider.h"
 
 #import "Account.h"
+#import "LogInfo.h"
+#import "Payment.h"
 #import "SecureData.h"
 #import "Utilities.h"
 
@@ -80,10 +82,10 @@ NSString* queryifyTransaction(Transaction *transaction) {
 #pragma mark - Life-Cycle
 
 - (instancetype)initWithChainId:(ChainId)chainId {
-    return [self initWithChainId:chainId apiKey:nil];
+    return [self initWithChainId:chainId apiKeys:nil];
 }
 
-- (instancetype)initWithChainId:(ChainId)chainId apiKey:(NSString *)apiKey {
+- (instancetype)initWithChainId:(ChainId)chainId apiKeys:(NSArray *)apiKeys {
     switch (chainId) {
         case ChainIdHomestead:
             _host = @"api.etherscan.io";
@@ -106,7 +108,7 @@ NSString* queryifyTransaction(Transaction *transaction) {
     
     self = [super initWithChainId:chainId];
     if (self) {
-        _apiKey = apiKey;
+        _apiKeys = apiKeys;
         [self doPoll];
     }
     return self;
@@ -155,7 +157,7 @@ NSString* queryifyTransaction(Transaction *transaction) {
 #pragma mark - Calling
 
 - (NSURL*)urlForPath: (NSString*)path {
-    NSString *apiKey = (_apiKey ? [NSString stringWithFormat:@"&apikey=%@", _apiKey]: @"");
+    NSString *apiKey = (_apiKeys ? [NSString stringWithFormat:@"&apikey=%@", _apiKeys[(arc4random() % [_apiKeys count])]]: @"");
     return [NSURL URLWithString:[NSString stringWithFormat:@"https://%@%@%@", _host, path, apiKey]];
 }
 
@@ -170,7 +172,7 @@ NSString* queryifyTransaction(Transaction *transaction) {
             return [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorBadResponse userInfo:userInfo];
         }
         
-        return [response objectForKey:@"result"];;
+        return [response objectForKey:@"result"];
     }];
 }
 
@@ -220,10 +222,10 @@ NSString* queryifyTransaction(Transaction *transaction) {
                                fetchType:ApiProviderFetchTypeIntegerHexString];
 }
 
-- (BigNumberPromise*)getGasPrice {
-    return [self promiseFetchProxyAction:@"action=eth_gasPrice"
-                               fetchType:ApiProviderFetchTypeBigNumberHexString];
-}
+//- (BigNumberPromise*)getGasPrice {
+//    return [self promiseFetchProxyAction:@"action=eth_gasPrice"
+//                               fetchType:ApiProviderFetchTypeBigNumberHexString];
+//}
 
 - (DataPromise*)call: (Transaction*)transaction {
     NSString *query = queryifyTransaction(transaction);
@@ -283,7 +285,7 @@ NSString* queryifyTransaction(Transaction *transaction) {
     return [self promiseFetchProxyAction:action fetchType:ApiProviderFetchTypeHash];
 }
 
-- (ArrayPromise*)getTransactions: (Address*)address startBlockTag: (BlockTag)blockTag {
+- (ArrayPromise *)getTransactions:(Address *)address startBlockTag:(BlockTag)startBlockTag endBlockTag:(BlockTag)endBlockTag {
     
     NSObject* (^processTransactions)(NSDictionary*) = ^NSObject*(NSDictionary *response) {
         NSMutableArray *result = [NSMutableArray array];
@@ -301,22 +303,48 @@ NSString* queryifyTransaction(Transaction *transaction) {
             NSMutableDictionary *mutableInfo = [info mutableCopy];
 
             // Massage some values that have their key names differ from ours
-            {
-                NSObject *gasLimit = [info objectForKey:@"gas"];
-                if (gasLimit) {
-                    [mutableInfo setObject:gasLimit forKey:@"gasLimit"];
-                }
-                
-                NSObject *timestamp = [info objectForKey:@"timeStamp"];
-                if (timestamp) {
-                    [mutableInfo setObject:timestamp forKey:@"timestamp"];
-                }
-                
-                NSObject *data = [info objectForKey:@"input"];
-                if (data) {
-                    [mutableInfo setObject:data forKey:@"data"];
-                }
-            }
+//            {
+//                NSObject *gasLimit = [info objectForKey:@"gas"];
+//                if (gasLimit) {
+//                    [mutableInfo setObject:gasLimit forKey:@"gasLimit"];
+//                }
+//
+//                NSString *gasPriceString = [info objectForKey:@"gasPrice"];
+//                BigNumber *gasPrice = [BigNumber bigNumberWithDecimalString:gasPriceString];
+//                NSString *gasUsedString = [info objectForKey:@"gasUsed"];
+//                BigNumber *gasUsed = [BigNumber bigNumberWithDecimalString:gasUsedString];
+//                BigNumber *fee = [gasPrice mul:gasUsed];
+//                if (fee) {
+//                    [mutableInfo setObject:fee.decimalString forKey:@"fee"];
+//                }
+//
+//                NSObject *timestamp = [info objectForKey:@"timeStamp"];
+//                if (timestamp) {
+//                    [mutableInfo setObject:timestamp forKey:@"timestamp"];
+//                }
+//
+//                NSObject *data = [info objectForKey:@"input"];
+//                if (data) {
+//                    [mutableInfo setObject:data forKey:@"data"];
+//                }
+//
+//                NSString *valueString = [info objectForKey:@"value"];
+//                if ([[Payment parseEther:valueString] isEqual:[BigNumber constantZero]] ) {
+//                    NSString *toAddress = [info objectForKey:@"input"];
+//                    if (toAddress.length > 75) {
+//                        toAddress = [toAddress substringWithRange:NSMakeRange(34, 40)];
+//                        if (toAddress) {
+//                            [mutableInfo setObject:toAddress forKey:@"to"];
+//                            [mutableInfo setObject:info[@"to"] forKey:@"contractAddress"];
+//                        }
+//                    }
+//                } else {
+//                    NSString *value = [BigNumber bigNumberWithHexString:valueString].decimalString;
+//                    if (value) {
+//                        [mutableInfo setObject:value forKey:@"value"];
+//                    }
+//                }
+//            }
             
             TransactionInfo *transactionInfo = [TransactionInfo transactionInfoFromDictionary:mutableInfo];
             if (!transactionInfo) {
@@ -329,51 +357,88 @@ NSString* queryifyTransaction(Transaction *transaction) {
         return result;
     };
     
-    /*
-    NSMutableArray<ArrayPromise*> *promises = [NSMutableArray arrayWithCapacity:2];
+    NSString *path = [NSString stringWithFormat:@"/api?module=account&action=txlist&address=%@&startblock=%li&endblock=%li&sort=asc",
+                      address, startBlockTag, endBlockTag];
     
-    {
-        NSString *path = [NSString stringWithFormat:@"/api?module=account&action=txlist&address=%@&startblock=%@&endblock=99999999&sort=asc",
-                          address, getBlockTag(blockTag)];
-        
-        ArrayPromise *promise = [self promiseFetchJSON:[self urlForPath:path]
-                                                  body:nil
-                                             fetchType:ApiProviderFetchTypeArray
-                                               process:processTransactions];
-        [promises addObject:promise];
-    }
+    return [self promiseFetchJSON:[self urlForPath:path]
+                             body:nil
+                        fetchType:ApiProviderFetchTypeArray
+                          process:processTransactions];
+}
 
-    {
-        NSString *path = [NSString stringWithFormat:@"/api?module=account&action=txlistinternal&address=%@&startblock=%@&endblock=99999999&sort=asc",
-                          address, getBlockTag(blockTag)];
+- (ArrayPromise *)getLogsWithAddress:(Address *)address
+                        fromBlockTag:(BlockTag)fromBlockTag
+                          toBlockTag:(BlockTag)toBlockTag
+                              topic0:(Hash *)topic0
+                              topic1:(Hash *)topic1
+                              topic2:(Hash *)topic2
+                              topic3:(Hash *)topic3
+                        topic0_1_opr:(NSString *)topic0_1_opr
+                        topic1_2_opr:(NSString *)topic1_2_opr
+                        topic2_3_opr:(NSString *)topic2_3_opr
+                        topic0_2_opr:(NSString *)topic0_2_opr
+                        topic0_3_opr:(NSString *)topic0_3_opr
+                        topic1_3_opr:(NSString *)topic1_3_opr {
+    
+    NSObject* (^processTransactions)(NSDictionary*) = ^NSObject*(NSDictionary *response) {
+        NSMutableArray *result = [NSMutableArray array];
         
-        ArrayPromise *promise = [self promiseFetchJSON:[self urlForPath:path]
-                                                  body:nil
-                                             fetchType:ApiProviderFetchTypeArray
-                                               process:processTransactions];
-        [promises addObject:promise];
-    }
+        NSArray *infos = (NSArray*)[response objectForKey:@"result"];
 
-    return [ArrayPromise promiseWithSetup:^(Promise *promise) {
-        [[Promise all:promises] onCompletion:^(ArrayPromise *allPromise) {
-            NSLog(@"FOO: %@ %@", allPromise.value, allPromise.error);
-            if (allPromise.error) {
-                [promise reject:allPromise.error];
-                return;
+        if (![infos isKindOfClass:[NSArray class]]) {
+            return [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorBadResponse userInfo:@{}];
+        }
+        
+        for (NSDictionary *info in infos) {
+            if (![info isKindOfClass:[NSDictionary class]]) {
+                return [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorBadResponse userInfo:@{}];
             }
             
-            NSMutableArray *result = [NSMutableArray array];
-            for (NSArray *transactions in allPromise.value) {
-                [result addObjectsFromArray:transactions];
+            LogInfo *logInfo = [LogInfo logInfoFromDictionary:info];
+            
+            if (!logInfo) {
+                return [NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorBadResponse userInfo:@{}];
             }
             
-            [promise resolve:result];
-        }];
-    }];
-     */
+            [result addObject:logInfo];
+        }
+        
+        return result;
+    };
     
-    NSString *path = [NSString stringWithFormat:@"/api?module=account&action=txlist&address=%@&startblock=%@&endblock=99999999&sort=asc",
-                      address, getBlockTag(blockTag)];
+    NSString *path = [NSString stringWithFormat:@"/api?module=logs&action=getLogs&address=%@&fromBlock=%li&toBlock=%li", 
+                      address, fromBlockTag, toBlockTag];
+    
+    if (topic0) {
+        path = [NSString stringWithFormat:@"%@&topic0=%@", path, topic0.hexString];
+    }
+    if (topic1) {
+        path = [NSString stringWithFormat:@"%@&topic1=%@", path, topic1.hexString];
+    }
+    if (topic2) {
+        path = [NSString stringWithFormat:@"%@&topic2=%@", path, topic2.hexString];
+    }
+    if (topic3) {
+        path = [NSString stringWithFormat:@"%@&topic3=%@", path, topic3.hexString];
+    }
+    if (topic0_1_opr) {
+        path = [NSString stringWithFormat:@"%@&topic0_1_opr=%@", path, topic0_1_opr];
+    }
+    if (topic1_2_opr) {
+        path = [NSString stringWithFormat:@"%@&topic1_2_opr=%@", path, topic1_2_opr];
+    }
+    if (topic2_3_opr) {
+        path = [NSString stringWithFormat:@"%@&topic2_3_opr=%@", path, topic2_3_opr];
+    }
+    if (topic0_2_opr) {
+        path = [NSString stringWithFormat:@"%@&topic0_2_opr=%@", path, topic0_2_opr];
+    }
+    if (topic0_3_opr) {
+        path = [NSString stringWithFormat:@"%@&topic0_3_opr=%@", path, topic0_3_opr];
+    }
+    if (topic1_3_opr) {
+        path = [NSString stringWithFormat:@"%@&topic1_3_opr=%@", path, topic1_3_opr];
+    }
     
     return [self promiseFetchJSON:[self urlForPath:path]
                              body:nil
@@ -414,7 +479,7 @@ NSString* queryifyTransaction(Transaction *transaction) {
 #pragma mark - NSObject
 
 - (NSString*)description {
-    return [NSString stringWithFormat:@"<EtherscanProvider chainId=%d apiKey=%@>", self.chainId, _apiKey];
+    return [NSString stringWithFormat:@"<EtherscanProvider chainId=%d apiKeys=%@>", self.chainId, _apiKeys];
 }
 
 @end

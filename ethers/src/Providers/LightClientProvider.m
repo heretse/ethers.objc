@@ -145,7 +145,8 @@ void sigPipe(int input) {
                     NSLog(@"Client: %@ %@", _client, error);
                     
                     error = nil;
-                    GoGethSyncProgress *syncProgress = [_client syncProgress:[GoGethNewContext() withTimeout:10000000000]
+                    GoGethSyncProgress *syncProgress = [_client syn
+                                                        cProgress:[GoGethNewContext() withTimeout:10000000000]
                                                                        error:&error];
                     NSLog(@"SyncProgress: %d %d %d %d %d %@", (int)[syncProgress getCurrentBlock],
                           (int)[syncProgress getHighestBlock], (int)[syncProgress getKnownStates], (int)[syncProgress getPulledStates], (int)[syncProgress getStartingBlock], error);

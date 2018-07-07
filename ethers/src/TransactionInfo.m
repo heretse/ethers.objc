@@ -47,8 +47,11 @@ static NSData *NullData = nil;
         
         _transactionHash = queryPath(info, @"dictionary:hash/hash");
         if (!_transactionHash) {
-            NSLog(@"ERROR: Missing hash");
-            return nil;
+            _transactionHash = queryPath(info, @"dictionary:transactionHash/hash");
+            if (!_transactionHash) {
+                NSLog(@"ERROR: Missing hash");
+//            return nil;
+            }
         }
         
         _blockHash = queryPath(info, @"dictionary:blockHash/hash");
@@ -74,7 +77,6 @@ static NSData *NullData = nil;
         if (!_contractAddress) {
             _contractAddress = [Address addressWithString:queryPath(info, @"dictionary:creates/string")];
         }
-        
 
         // @TODO: Is this allowed to be nil?
         _fromAddress = [Address addressWithString:queryPath(info, @"dictionary:from/string")];
@@ -128,6 +130,11 @@ static NSData *NullData = nil;
         if (!_value) {
             _value = [BigNumber constantZero];
         }
+        
+        _status = queryPath(info, @"dictionary:status/bigNumber");
+        if (!_status) {
+            _status = [BigNumber constantZero];
+        }
     }
     return self;
 }
@@ -159,19 +166,30 @@ static NSData *NullData = nil;
         [info setObject:_toAddress.checksumAddress forKey:@"to"];
     }
     
-    [info setObject:[_gasLimit decimalString] forKey:@"gasLimit"];
-    
+    if (_gasLimit) {
+        [info setObject:[_gasLimit decimalString] forKey:@"gasLimit"];
+    }
+        
     if (_gasUsed) {
         [info setObject:[_gasUsed decimalString] forKey:@"gasUsed"];
+        _fee = [_gasPrice mul:_gasUsed];
+    } else {
+        _fee = [_gasPrice mul:_gasLimit];
     }
     
     [info setObject:[_gasPrice decimalString] forKey:@"gasPrice"];
     
+    if (_fee) {
+        [info setObject:[_fee decimalString] forKey:@"fee"];
+    }
+        
     if (_cumulativeGasUsed) {
         [info setObject:[_cumulativeGasUsed decimalString] forKey:@"cumulativeGasUsed"];
     }
     
-    [info setObject:[NSString stringWithFormat:@"%ld", (long)_nonce] forKey:@"nonce"];
+    if (_nonce) {
+        [info setObject:[NSString stringWithFormat:@"%ld", (long)_nonce] forKey:@"nonce"];
+    }
     
     [info setObject:[SecureData dataToHexString:_data] forKey:@"data"];
     
@@ -208,6 +226,44 @@ static NSData *NullData = nil;
                                       @"to": transaction.toAddress.checksumAddress,
                                       @"gasLimit": [transaction.gasLimit decimalString],
                                       @"gasPrice": [transaction.gasPrice decimalString],
+                                      @"fee": [transaction.fee decimalString],
+                                      @"nonce": [@(transaction.nonce) stringValue],
+                                      @"data": data,
+                                      @"value": [transaction.value decimalString]
+                                      };
+    
+    return [TransactionInfo transactionInfoFromDictionary:transactionInfo];
+}
+
+
++ (instancetype)tokenTransactionInfoWithPendingTransaction:(Transaction *)transaction hash:(Hash *)transactionHash {
+    NSNumber *timestamp = [NSNumber numberWithLongLong:[[NSDate date] timeIntervalSince1970]];
+    NSLog(@"transaction:%@",transaction);
+    NSData *data = transaction.data;
+    if (!data) { data = [NSData data]; }
+    
+    NSString *inputDataString = [SecureData dataToHexString:data];
+    NSString *toAddress = transaction.toAddress.checksumAddress;
+    NSString *value = @"0x0";
+    if (inputDataString.length > 137) {
+        NSString *methodString = [inputDataString substringToIndex:10];
+        if ([methodString isEqualToString:@"0xa9059cbb"]) {
+            toAddress = [inputDataString substringWithRange:NSMakeRange(10, 64)];
+            toAddress = [toAddress substringFromIndex:24];
+            toAddress = [NSString stringWithFormat:@"0x%@", toAddress];
+        }
+        NSString *valueString = [inputDataString substringWithRange:NSMakeRange(inputDataString.length - 64, 64)];
+        valueString = [NSString stringWithFormat:@"0x%@", valueString];
+        value = [BigNumber bigNumberWithHexString:valueString].decimalString;
+    }
+    NSDictionary *transactionInfo = @{
+                                      @"hash": [transactionHash hexString],
+                                      @"timestamp": [timestamp stringValue],
+                                      @"from": transaction.fromAddress.checksumAddress,
+                                      @"to": toAddress,
+                                      @"gasLimit": [transaction.gasLimit decimalString],
+                                      @"gasPrice": [transaction.gasPrice decimalString],
+                                      @"fee": [transaction.fee decimalString],
                                       @"nonce": [@(transaction.nonce) stringValue],
                                       @"data": [SecureData dataToHexString:data],
                                       @"value": [transaction.value decimalString],
@@ -248,11 +304,11 @@ static NSData *NullData = nil;
 }
 
 - (NSString*)description {
-    return [NSString stringWithFormat:@"<TransactionInfo hash=%@ blockNumber=%ld blockHash=%@ timestamp=%@ from=%@ to=%@ contractAddress=%@ nonce=%ld gasLimit=%@ gasPrice=%@ gasUsed=%@ cumulativeGasUsed=%@ value=%@ data=%@>",
+    return [NSString stringWithFormat:@"<TransactionInfo hash=%@ blockNumber=%ld blockHash=%@ timestamp=%@ from=%@ to=%@ contractAddress=%@ nonce=%ld gasLimit=%@ gasPrice=%@ gasUsed=%@ cumulativeGasUsed=%@ value=%@ data=%@ status=%@>",
             [_transactionHash hexString], (unsigned long)_blockNumber, [_blockHash hexString], [NSDate dateWithTimeIntervalSince1970:_timestamp],
             _fromAddress, _toAddress, _contractAddress, (unsigned long)_nonce,
             [_gasLimit decimalString], [_gasPrice decimalString], [_gasUsed decimalString], [_cumulativeGasUsed decimalString],
-            [Payment formatEther:_value], [SecureData dataToHexString:_data]
+            [Payment formatEther:_value], [SecureData dataToHexString:_data], [_status decimalString]
             ];
 }
 

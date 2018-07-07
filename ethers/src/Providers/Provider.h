@@ -132,10 +132,24 @@ NSString *getBlockTag(BlockTag blockTag);
 - (HashPromise*)getStorageAt: (Address*)address position: (BigNumber*)position;
 
 - (TransactionInfoPromise*)getTransaction: (Hash*)transactionHash;
+- (TransactionInfoPromise*)getTransactionReceiptByHash:(Hash *)transactionHash;
 
-- (ArrayPromise*)getTransactions: (Address*)address startBlockTag: (BlockTag)blockTag;
+- (ArrayPromise*)getTransactions:(Address*)address startBlockTag:(BlockTag)startBlockTag endBlockTag:(BlockTag)endBlockTag;
+- (ArrayPromise*)getLogsWithAddress:(Address *)address
+                       fromBlockTag:(BlockTag)fromBlockTag
+                         toBlockTag:(BlockTag)toBlockTag
+                             topic0:(Hash *)topic0
+                             topic1:(Hash *)topic1
+                             topic2:(Hash *)topic2
+                             topic3:(Hash *)topic3 topic0_1_opr:(NSString *)topic0_1_opr
+                       topic1_2_opr:(NSString *)topic1_2_opr
+                       topic2_3_opr:(NSString *)topic2_3_opr
+                       topic0_2_opr:(NSString *)topic0_2_opr
+                       topic0_3_opr:(NSString *)topic0_3_opr
+                       topic1_3_opr:(NSString *)topic1_3_opr;
 
 - (FloatPromise*)getEtherPrice;
+- (BigNumberPromise*)getTokenEtherPriceWithAddress:(Address *)address;
 
 - (AddressPromise*)lookupName: (NSString*)name;
 - (StringPromise*)lookupAddress: (Address*)address;

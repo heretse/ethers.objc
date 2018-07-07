@@ -447,7 +447,7 @@ static NSDateFormatter *TimeFormatter = nil;
 
     NSUUID *uuid = [NSUUID UUID];
     
-    SecureData *iv = [SecureData secureDataWithLength:16];;
+    SecureData *iv = [SecureData secureDataWithLength:16];
     {
         int failure = SecRandomCopyBytes(kSecRandomDefault, (int)iv.length, iv.mutableBytes);
         if (failure) {
@@ -456,7 +456,7 @@ static NSDateFormatter *TimeFormatter = nil;
         }
     }
 
-    SecureData *salt = [SecureData secureDataWithLength:32];;
+    SecureData *salt = [SecureData secureDataWithLength:32];
     {
         int failure = SecRandomCopyBytes(kSecRandomDefault, (int)salt.length, salt.mutableBytes);
         if (failure) {

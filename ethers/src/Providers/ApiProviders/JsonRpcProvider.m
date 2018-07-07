@@ -61,7 +61,6 @@
     [self doPoll];
 }
 
-
 #pragma mark - Polling
 
 - (void)doPoll {
@@ -151,7 +150,7 @@
                   fetchType:ApiProviderFetchTypeIntegerHexString];
 }
 
-- (DataPromise*)getCode: (Address*)address {
+- (DataPromise*)getCode:(Address*)address {
     if (!address) {
         return [DataPromise rejected:[NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorInvalidParameters userInfo:@{}]];
     }
@@ -218,6 +217,16 @@
     return [self sendMethod:@"eth_getBlockByHash"
                      params:@[blockHash.hexString, @(NO)]
                   fetchType:ApiProviderFetchTypeBlockInfo];
+}
+
+- (TransactionInfoPromise*)getTransactionReceiptByHash:(Hash *)transactionHash {
+    if (!transactionHash) {
+        return [TransactionInfoPromise rejected:[NSError errorWithDomain:ProviderErrorDomain code:ProviderErrorInvalidParameters userInfo:@{}]];
+    }
+    
+    return [self sendMethod:@"eth_getTransactionReceipt"
+                     params:@[transactionHash.hexString]
+                  fetchType:ApiProviderFetchTypeTransactionInfo];
 }
 
 - (TransactionInfoPromise*)getTransaction:(Hash *)transactionHash {

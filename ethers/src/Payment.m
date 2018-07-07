@@ -109,10 +109,18 @@ static RegEx *RegexNumbersOnly = nil;
 }
 
 + (NSString*)formatEther: (BigNumber*)wei {
-    return [Payment formatEther:wei options:0];
+    return [Payment formatEther:wei decimals:18 options:2];
+}
+
++ (NSString*)formatEther: (BigNumber*)wei decimals: (NSUInteger)decimals {
+    return [Payment formatEther:wei decimals:decimals options:2];
 }
 
 + (NSString*)formatEther: (BigNumber*)wei options: (NSUInteger)options {
+    return [Payment formatEther:wei decimals:18 options:options];
+}
+
++ (NSString*)formatEther: (BigNumber*)wei decimals: (NSUInteger)decimals options: (NSUInteger)options {
     if (!wei) { return nil; }
     
     NSString *weiString = [wei decimalString];
@@ -123,11 +131,11 @@ static RegEx *RegexNumbersOnly = nil;
         weiString = [weiString substringFromIndex:1];
     }
     
-    while (weiString.length < 19) {
+    while (weiString.length < (decimals + 1)) {
         weiString = [@"0" stringByAppendingString:weiString];
     }
     
-    NSUInteger decimalIndex = weiString.length - 18;
+    NSUInteger decimalIndex = weiString.length - decimals;
     NSString *whole = [weiString substringToIndex:decimalIndex];
     NSString *decimal = [weiString substringFromIndex:decimalIndex];
     

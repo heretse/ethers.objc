@@ -212,6 +212,11 @@ static NSData *NullData = nil;
     return _gasPrice;
 }
 
+- (BigNumber*)fee {
+    if (!_fee) { return [BigNumber constantZero]; }
+    return _fee;
+}
+
 - (BigNumber*)value {
     if (!_value) { return [BigNumber constantZero]; }
     return _value;
